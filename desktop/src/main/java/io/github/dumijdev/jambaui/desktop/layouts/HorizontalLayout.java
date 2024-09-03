@@ -20,8 +20,10 @@ public class HorizontalLayout extends AbstractHorizontalLayout<HBox> {
     }
 
     @Override
-    public void add(Component<?> component) {
-        hbox.getChildren().add(((Component<Node>) component).getInternal());
+    public void add(Component<?>... component) {
+        for (Component<?> c : component) {
+            hbox.getChildren().add(((Component<Node>) c).getInternal());
+        }
     }
 
     @Override

@@ -1,27 +1,27 @@
 package io.github.dumijdev.jambaui.desktop.components;
 
 import io.github.dumijdev.jambaui.core.components.AbstractButton;
-import io.github.dumijdev.jambaui.core.utils.Event;
+import io.github.dumijdev.jambaui.core.events.ClickEvent;
+import io.github.dumijdev.jambaui.core.events.EventListener;
 
 public class Button extends AbstractButton<javafx.scene.control.Button> {
     private final javafx.scene.control.Button button;
 
     public Button() {
-        super("Button");
-        button = new javafx.scene.control.Button(getText());
+        this("Button", null);
     }
 
     public Button(String text) {
-        this();
+        this(text, null);
     }
 
-    public Button(String text, Event event) {
-        this(text);
-    }
+    public Button(String text, EventListener<ClickEvent> listener) {
+        super(text, listener);
+        button = new javafx.scene.control.Button(getText());
 
-    @Override
-    public void click() {
-
+        button.setOnAction(actionEvent -> {
+            listener.onEvent(new ClickEvent());
+        });
     }
 
     @Override

@@ -1,17 +1,23 @@
 package io.github.dumijdev.jambaui.ioc.container;
 
 import io.github.dumijdev.jambaui.core.Component;
+import io.github.dumijdev.jambaui.core.Screen;
+import io.github.dumijdev.jambaui.core.components.DefaultScreen;
+import io.github.dumijdev.jambaui.core.layouts.Layout;
 import io.github.dumijdev.jambaui.ioc.annotations.Inject;
+import io.github.dumijdev.jambaui.ioc.annotations.OnCreated;
 import io.github.dumijdev.jambaui.ioc.annotations.View;
 import org.reflections.Reflections;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-public class ViewContainer implements IoCContainer<String, Component<?>> {
-    private final Map<String, Component<?>> views = new HashMap<>();
+public class ViewContainer implements IoCContainer<String, Screen<?, ?>> {
+    private final Map<String, Screen<?, ?>> views = new HashMap<>();
     private static final ViewContainer instance = new ViewContainer();
     private Component<?> main = null;
 
@@ -36,18 +42,54 @@ public class ViewContainer implements IoCContainer<String, Component<?>> {
 
     }
 
-    public Component<?> resolve(String s) {
+    public Screen<?, ?> resolve(String s) {
         return views.get(s);
     }
 
-    public void register(String s, Component<?> component) {
-        views.put(s, component);
+    public void register(String s, Screen<?, ?> screen) {
+        views.put(s, screen);
+    }
+
+    @Override
+    public List<Screen<?, ?>> resolveAll() {
+        return views.values().stream().toList();
     }
 
     private void createInjectable(Class<?> candidate) {
         try {
             var view = candidate.getAnnotation(View.class);
-            var instance = candidate.getDeclaredConstructor().newInstance();
+
+            if (views.containsKey(view.value())) {
+                return;
+            }
+
+            System.out.println("View name: " + view.value());
+
+            var contructors = candidate.getDeclaredConstructors();
+            Constructor<?> injectConstructor = null;
+
+            for (var constructor : contructors) {
+                if (constructor.isAnnotationPresent(Inject.class)) {
+                    injectConstructor = constructor;
+                    break;
+                }
+            }
+
+            Object instance;
+            if (injectConstructor != null) {
+
+                Class<?>[] parameterTypes = injectConstructor.getParameterTypes();
+                Object[] parameters = new Object[parameterTypes.length];
+
+                for (int i = 0; i < parameterTypes.length; i++) {
+                    parameters[i] = getInjectable(parameterTypes[i]);
+                }
+
+                instance = injectConstructor.newInstance(parameters);
+            } else {
+                instance = candidate.getDeclaredConstructor().newInstance();
+            }
+
             var layout = LayoutContainer.getInstance().resolve(view.layout());
             var isMain = view.main();
 
@@ -64,7 +106,7 @@ public class ViewContainer implements IoCContainer<String, Component<?>> {
 
             layoutClone.add((Component<?>) instance);
 
-            register(view.value(), layoutClone);
+            register(view.value(), new DefaultScreen<>((Layout<Object>) layoutClone, (Component<Object>) instance));
 
             if (isMain) {
                 if (main == null) {
@@ -87,9 +129,12 @@ public class ViewContainer implements IoCContainer<String, Component<?>> {
 
         for (var field : fields) {
             if (field.isAnnotationPresent(Inject.class)) {
+                System.out.println("View: " + field.getName());
                 try {
                     if (field.trySetAccessible()) {
                         Object dependency = getInjectable(field.getType());
+                        System.out.println("Inject: " + field.getName());
+                        System.out.println("Dependency: " + dependency);
                         field.set(instance, dependency);
                     }
                 } catch (IllegalAccessException e) {
@@ -102,11 +147,13 @@ public class ViewContainer implements IoCContainer<String, Component<?>> {
 
     @SuppressWarnings("unchecked")
     private <T> T getInjectable(Class<T> beanClass) {
-        T bean = (T) LogicContainer.getInstance().resolve(beanClass);
+        T bean = (T) ApplicationContainer.getInstance().resolve(beanClass);
         if (bean == null) {
-            LogicContainer.getInstance().registerFromBase(beanClass);
-            bean = (T) LogicContainer.getInstance().resolve(beanClass);
+            ApplicationContainer.getInstance().registerFromBase(beanClass);
+            bean = (T) ApplicationContainer.getInstance().resolve(beanClass);
+            System.out.println("Inject: " + bean + ", type: " + beanClass.getSimpleName());
         }
+
         return bean;
     }
 

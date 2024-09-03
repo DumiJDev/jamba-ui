@@ -2,22 +2,35 @@ package io.github.dumijdev.jambaui.core.components;
 
 import io.github.dumijdev.jambaui.core.Component;
 import io.github.dumijdev.jambaui.core.Style;
-import io.github.dumijdev.jambaui.core.utils.EventBus;
-import io.github.dumijdev.jambaui.core.utils.EventListener;
+import io.github.dumijdev.jambaui.core.events.ClickEvent;
+import io.github.dumijdev.jambaui.core.events.EventListener;
 
 public abstract class AbstractButton<I> implements Component<I> {
-    private final EventBus eventBus = new EventBus();
     private String text;
+    private EventListener<ClickEvent> listener;
+
+    public AbstractButton() {
+        this("Button");
+    }
 
     public AbstractButton(String text) {
         this.text = text;
     }
 
-    public void addClickListener(EventListener listener) {
-        eventBus.registerListener(listener);
+    public AbstractButton(String text, EventListener<ClickEvent> listener) {
+        this.text = text;
+        this.listener = listener;
     }
 
-    public abstract void click();
+    public void addClickListener(EventListener<ClickEvent> listener) {
+        this.listener = listener;
+    }
+
+    public void click() {
+        if (listener != null) {
+            listener.onEvent(new ClickEvent());
+        }
+    }
 
     public String getText() {
         return this.text;
@@ -28,7 +41,7 @@ public abstract class AbstractButton<I> implements Component<I> {
     }
 
     @Override
-    public void add(Component<?> component) {
+    public void add(Component<?>... component) {
         throw new UnsupportedOperationException("Button cannot contain other components.");
     }
 
@@ -38,27 +51,13 @@ public abstract class AbstractButton<I> implements Component<I> {
     }
 
     @Override
-    public Style getStyle() {
-        return null;
-    }
-
-    @Override
     public void setProperty(String name, Object value) {
-        if ("text".equals(name)) {
-
-        } else if ("style".equals(name)) {
-
-        }
+        properties.put(name, value);
     }
 
     @Override
     public Object getProperty(String name) {
-        if ("text".equals(name)) {
-            return null;
-        } else if ("style".equals(name)) {
-            return null;
-        }
-        return null;
+        return properties.get(name);
     }
 
 }

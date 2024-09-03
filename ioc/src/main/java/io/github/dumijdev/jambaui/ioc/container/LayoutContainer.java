@@ -2,11 +2,14 @@ package io.github.dumijdev.jambaui.ioc.container;
 
 import io.github.dumijdev.jambaui.core.layouts.Layout;
 import io.github.dumijdev.jambaui.ioc.annotations.Inject;
+import io.github.dumijdev.jambaui.ioc.annotations.OnCreated;
 import org.reflections.Reflections;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class LayoutContainer implements IoCContainer<Class<? extends Layout<?>>, Layout<?>> {
@@ -29,12 +32,37 @@ public class LayoutContainer implements IoCContainer<Class<? extends Layout<?>>,
             }
         }
 
+
     }
 
     private void createInjectable(Class<? extends Layout<?>> type) {
         try {
-            var instance = type.getDeclaredConstructor().newInstance();
-            register(type, instance);
+            var contructors = type.getDeclaredConstructors();
+            Constructor<?> injectConstructor = null;
+
+            for (var constructor : contructors) {
+                if (constructor.isAnnotationPresent(Inject.class)) {
+                    injectConstructor = constructor;
+                    break;
+                }
+            }
+
+            Object instance;
+            if (injectConstructor != null) {
+
+                Class<?>[] parameterTypes = injectConstructor.getParameterTypes();
+                Object[] parameters = new Object[parameterTypes.length];
+
+                for (int i = 0; i < parameterTypes.length; i++) {
+                    parameters[i] = getInjectable(parameterTypes[i]);
+                }
+
+                instance = injectConstructor.newInstance(parameters);
+            } else {
+                instance = type.getDeclaredConstructor().newInstance();
+            }
+
+            register(type, (Layout<?>) instance);
             injectFields(instance);
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
                  NoSuchMethodException e) {
@@ -48,6 +76,11 @@ public class LayoutContainer implements IoCContainer<Class<? extends Layout<?>>,
 
     public void register(Class<? extends Layout<?>> c, Layout<?> layout) {
         layouts.put(c, layout);
+    }
+
+    @Override
+    public List<Layout<?>> resolveAll() {
+        return layouts.values().stream().toList();
     }
 
     private void injectFields(Object bean) {
@@ -69,10 +102,10 @@ public class LayoutContainer implements IoCContainer<Class<? extends Layout<?>>,
 
     @SuppressWarnings("unchecked")
     private <T> T getInjectable(Class<T> beanClass) {
-        T bean = (T) LogicContainer.getInstance().resolve(beanClass);
+        T bean = (T) ApplicationContainer.getInstance().resolve(beanClass);
         if (bean == null) {
-            LogicContainer.getInstance().registerFromBase(beanClass);
-            bean = (T) LogicContainer.getInstance().resolve(beanClass);
+            ApplicationContainer.getInstance().registerFromBase(beanClass);
+            bean = (T) ApplicationContainer.getInstance().resolve(beanClass);
         }
         return bean;
     }

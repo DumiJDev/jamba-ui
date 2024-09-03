@@ -1,5 +1,7 @@
 package io.github.dumijdev.jambaui.core.components;
 
+import java.util.function.Function;
+
 public class Column {
     private String name;
     private int width;
