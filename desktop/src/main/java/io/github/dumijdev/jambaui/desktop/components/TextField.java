@@ -22,11 +22,6 @@ public class TextField extends AbstractTextField<javafx.scene.control.TextField>
     }
 
     @Override
-    public Style getStyle() {
-        return null;
-    }
-
-    @Override
     public void update() {
         textField.layout();
     }

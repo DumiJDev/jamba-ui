@@ -1,9 +1,8 @@
 package io.github.dumijdev.jambaui.desktop.components;
 
 import io.github.dumijdev.jambaui.core.Component;
-import io.github.dumijdev.jambaui.core.Style;
 import io.github.dumijdev.jambaui.core.components.AbstractLabel;
-import io.github.dumijdev.jambaui.core.events.ClickEvent;
+import javafx.event.ActionEvent;
 
 public class Label extends AbstractLabel<javafx.scene.control.Label> {
     private final javafx.scene.control.Label label;
@@ -15,22 +14,17 @@ public class Label extends AbstractLabel<javafx.scene.control.Label> {
 
     @Override
     public void click() {
-        eventBus.fireEvent(new ClickEvent());
+        label.fireEvent(new ActionEvent());
     }
 
     @Override
-    public void add(Component<?>...component) {
+    public void add(Component<?>... component) {
 
     }
 
     @Override
     public void remove(Component<?> component) {
 
-    }
-
-    @Override
-    public Style getStyle() {
-        return null;
     }
 
     @Override

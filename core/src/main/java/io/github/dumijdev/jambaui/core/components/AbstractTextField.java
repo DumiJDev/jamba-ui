@@ -1,13 +1,19 @@
 package io.github.dumijdev.jambaui.core.components;
 
 import io.github.dumijdev.jambaui.core.Component;
+import io.github.dumijdev.jambaui.core.Style;
+import io.github.dumijdev.jambaui.core.StyleObject;
 import io.github.dumijdev.jambaui.core.events.ChangeValueEvent;
-import io.github.dumijdev.jambaui.core.events.ClickEvent;
 import io.github.dumijdev.jambaui.core.events.EventListener;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public abstract class AbstractTextField<I> implements Component<I> {
     private String text;
     private EventListener<ChangeValueEvent> changeValueEventEventListener;
+    private final Style style = new StyleObject();
+    private final Map<String, Object> properties = new HashMap<>();
 
     public AbstractTextField() {
         this("TextField");
@@ -56,5 +62,10 @@ public abstract class AbstractTextField<I> implements Component<I> {
 
     public void addClickListener(EventListener<ChangeValueEvent> listener) {
         this.changeValueEventEventListener = listener;
+    }
+
+    @Override
+    public Style getStyle() {
+        return style;
     }
 }

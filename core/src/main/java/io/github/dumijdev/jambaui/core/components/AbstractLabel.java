@@ -1,12 +1,19 @@
 package io.github.dumijdev.jambaui.core.components;
 
 import io.github.dumijdev.jambaui.core.Component;
+import io.github.dumijdev.jambaui.core.Style;
+import io.github.dumijdev.jambaui.core.StyleObject;
 import io.github.dumijdev.jambaui.core.events.ClickEvent;
 import io.github.dumijdev.jambaui.core.events.EventListener;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public abstract class AbstractLabel<I> implements Component<I> {
     private String text;
     private EventListener<ClickEvent> clickListener;
+    private final Style style = new StyleObject();
+    private final Map<String, Object> properties = new HashMap<>();
 
     public AbstractLabel() {
         this("Label", null);
@@ -47,5 +54,10 @@ public abstract class AbstractLabel<I> implements Component<I> {
 
     public void setText(String text) {
         this.text = text;
+    }
+
+    @Override
+    public Style getStyle() {
+        return style;
     }
 }

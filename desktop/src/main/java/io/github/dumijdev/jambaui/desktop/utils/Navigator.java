@@ -11,7 +11,7 @@ import javafx.stage.Stage;
 @Injectable
 public class Navigator {
     private static final Pane parent = new AnchorPane();
-    private static Stage stage = new Stage();
+    private static final Stage stage = new Stage();
 
     public Navigator() {
     }

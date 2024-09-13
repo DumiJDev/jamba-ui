@@ -2,13 +2,18 @@ package io.github.dumijdev.jambaui.core.components;
 
 import io.github.dumijdev.jambaui.core.Component;
 import io.github.dumijdev.jambaui.core.Style;
+import io.github.dumijdev.jambaui.core.StyleObject;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 public abstract class AbstractTable<T, K, I> implements Component<I> {
     private final List<Column> columns;
     private List<Row<T>> rows;
+    private final Style style = new StyleObject();
+    private final Map<String, Object> properties = new HashMap<>();
 
     public AbstractTable() {
         columns = new LinkedList<>();
@@ -50,4 +55,8 @@ public abstract class AbstractTable<T, K, I> implements Component<I> {
         return properties.get(name);
     }
 
+    @Override
+    public Style getStyle() {
+        return style;
+    }
 }
