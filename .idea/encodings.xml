@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="Encoding">
-    <file url="file://$PROJECT_DIR$/core/src/main/java" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/core/src/main/resources" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/desktop/src/main/java" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/desktop/src/main/resources" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/ioc/src/main/java" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/ioc/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/jamba-ui-context/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/jamba-ui-context/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/jamba-ui-core/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/jamba-ui-core/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/jamba-ui-desktop/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/jamba-ui-desktop/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/utils/src/main/java" charset="UTF-8" />
