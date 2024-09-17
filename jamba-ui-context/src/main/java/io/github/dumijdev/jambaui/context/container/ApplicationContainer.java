@@ -1,8 +1,9 @@
 package io.github.dumijdev.jambaui.context.container;
 
 import io.github.classgraph.ClassGraph;
-import io.github.dumijdev.jambaui.core.annotations.*;
+import io.github.classgraph.ScanResult;
 import io.github.dumijdev.jambaui.context.utils.PropertyResolver;
+import io.github.dumijdev.jambaui.core.annotations.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,49 +32,58 @@ public class ApplicationContainer implements IoCContainer<Class<?>, Object> {
     @Override
     public void registerFromBase(Class<?> rootClass) {
         try (var result = new ClassGraph().enableAllInfo().acceptPackages(rootClass.getPackage().getName()).scan()) {
+            readDependencies(result);
+        }
 
-            for (var candidate : result.getClassesWithAnnotation(Injectable.class)) {
-                var clazz = candidate.loadClass();
-                if (!Modifier.isAbstract(clazz.getModifiers()) && !clazz.isInterface()) {
-                    createInjectable(clazz);
-                }
+        try (var result = new ClassGraph().enableAllInfo().acceptPackages("io.github.dumijdev.jambaui").scan()) {
+            readDependencies(result);
+        }
+    }
+
+    private void readDependencies(ScanResult result) {
+        for (var candidate : result.getClassesWithAnnotation(Injectable.class)) {
+            var clazz = candidate.loadClass();
+            if (clazz.isAnnotation()) {
+
+            } else if (!Modifier.isAbstract(clazz.getModifiers()) && !clazz.isInterface()) {
+                createInjectable(clazz);
             }
+        }
 
-            for (var candidate : result.getClassesWithAnnotation(Logic.class)) {
-                if (!Modifier.isAbstract(candidate.getModifiers()) && !candidate.isInterface()) {
-                    createInjectable(candidate.loadClass());
-                }
+        for (var candidate : result.getClassesWithAnnotation(Logic.class)) {
+            if (!Modifier.isAbstract(candidate.getModifiers()) && !candidate.isInterface()) {
+                createInjectable(candidate.loadClass());
             }
+        }
 
-            for (var candidate : result.getClassesWithAnnotation(Config.class)) {
-                if (!Modifier.isAbstract(candidate.getModifiers()) && !candidate.isInterface()) {
-                    var candidateMethods = candidate.loadClass().getDeclaredMethods();
+        for (var candidate : result.getClassesWithAnnotation(Config.class)) {
+            if (!Modifier.isAbstract(candidate.getModifiers()) && !candidate.isInterface()) {
+                var candidateMethods = candidate.loadClass().getDeclaredMethods();
 
-                    for (var candidateMethod : candidateMethods) {
-                        if (candidateMethod.isAnnotationPresent(Injectable.class)) {
-                            try {
-                                candidateMethod.setAccessible(true);
-                                var params = candidateMethod.getParameterTypes();
-                                var paramValues = new Object[params.length];
+                for (var candidateMethod : candidateMethods) {
+                    if (candidateMethod.isAnnotationPresent(Injectable.class)) {
+                        try {
+                            candidateMethod.setAccessible(true);
+                            var params = candidateMethod.getParameterTypes();
+                            var paramValues = new Object[params.length];
 
-                                for (int i = 0; i < params.length; i++) {
-                                    paramValues[i] = resolve(params[i]);
+                            for (int i = 0; i < params.length; i++) {
+                                paramValues[i] = resolve(params[i]);
 
-                                    if (isNull(paramValues[i])) {
-                                        throw new IllegalArgumentException("Parameter " + params[i] + " can not be injected...");
-                                    }
+                                if (isNull(paramValues[i])) {
+                                    throw new IllegalArgumentException("Parameter " + params[i] + " can not be injected...");
                                 }
-
-                                var object = candidateMethod.invoke(paramValues);
-
-                                if (isNull(object)) {
-                                    throw new IllegalArgumentException("Method " + candidateMethod.getName() + " is not injectable...");
-                                }
-
-                                register(object.getClass(), object);
-                            } catch (Exception e) {
-                                throw new RuntimeException(e);
                             }
+
+                            var object = candidateMethod.invoke(paramValues);
+
+                            if (isNull(object)) {
+                                throw new IllegalArgumentException("Method " + candidateMethod.getName() + " is not injectable...");
+                            }
+
+                            register(object.getClass(), object);
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
                         }
                     }
                 }
@@ -83,7 +93,6 @@ public class ApplicationContainer implements IoCContainer<Class<?>, Object> {
 
     private void createInjectable(Class<?> candidate) {
         try {
-            logger.info(candidate.getSimpleName());
             var contructors = candidate.getDeclaredConstructors();
             Constructor<?> injectConstructor = null;
 

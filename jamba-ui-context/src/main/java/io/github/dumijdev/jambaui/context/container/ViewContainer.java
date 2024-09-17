@@ -82,7 +82,6 @@ public class ViewContainer implements IoCContainer<String, Screen<?, ?>> {
                 Object[] parameterValues = new Object[parameterTypes.length];
 
                 for (int i = 0; i < parameterTypes.length; i++) {
-                    System.out.println(parameterTypes[i]);
                     if (parameters[i].isAnnotationPresent(Property.class)) {
                         var property = parameters[i].getDeclaredAnnotation(Property.class);
                         parameterValues[i] = PropertyResolver.resolve(property.value(), parameterTypes[i]);

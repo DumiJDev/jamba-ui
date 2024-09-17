@@ -1,12 +1,12 @@
 package io.github.dumijdev.jambaui.desktop;
 
 import com.sun.javafx.application.PlatformImpl;
+import io.github.dumijdev.jambaui.context.utils.BannerUtils;
 import io.github.dumijdev.jambaui.core.annotations.OnCreated;
 import io.github.dumijdev.jambaui.core.utils.Navigator;
 import io.github.dumijdev.jambaui.desktop.utils.UINavigator;
 import io.github.dumijdev.jambaui.context.container.ApplicationContainer;
 import io.github.dumijdev.jambaui.context.container.IoCContainer;
-import io.github.dumijdev.jambaui.context.factory.LayoutFactory;
 import io.github.dumijdev.jambaui.context.container.ViewContainer;
 import io.github.dumijdev.jambaui.context.utils.ConfigurationManager;
 import javafx.scene.Node;
@@ -47,14 +47,12 @@ public class JambaUIApplication {
     public static void run(Class<?> initClass, String... args) {
 
         PlatformImpl.startup(() -> {
+            BannerUtils.printBanner();
             ApplicationContainer.getInstance().register(Navigator.class, navigator);
             ApplicationContainer.getInstance().register(ConfigurationManager.class, ConfigurationManager.getInstance());
+
             for (var container : containers) {
-                System.out.println("========================================");
-                System.out.println("Running " + container.getClass().getSimpleName());
                 container.registerFromBase(initClass);
-                System.out.println("========================================\b");
-                System.out.println("Ending " + container.getClass().getSimpleName());
             }
 
             start();

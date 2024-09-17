@@ -13,11 +13,10 @@ public class PropertyLoader {
     public PropertyLoader(String fileName) {
         try (InputStream input = getClass().getClassLoader().getResourceAsStream(fileName)) {
             if (input == null) {
-                System.out.println("Desculpe, não foi possível encontrar o arquivo " + fileName);
                 return;
             }
             properties.load(input);
-        } catch (IOException e) {
+        } catch (IOException ignored) {
 
         }
     }

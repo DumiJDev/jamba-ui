@@ -22,7 +22,6 @@ public class ConfigurationManager {
     }
 
     public void loadProperties(String fileName) {
-        System.out.println("Loading properties from " + fileName);
         if (props.isEmpty()) {
             if (fileName.endsWith(".properties")) {
                 var properties = new PropertyLoader(fileName);
