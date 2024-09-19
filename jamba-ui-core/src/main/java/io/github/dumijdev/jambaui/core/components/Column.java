@@ -2,39 +2,17 @@ package io.github.dumijdev.jambaui.core.components;
 
 import java.util.function.Function;
 
-public class Column {
-    private String name;
-    private int width;
-    private String value;
+public interface Column<T> {
+    String getName();
 
-    public Column() {
-    }
+    double getWidth();
 
-    public String getName() {
-        return name;
-    }
+    String getValue();
 
-    public int getWidth() {
-        return width;
-    }
+    Column<T> name(String name);
 
-    public String getValue() {
-        return value;
-    }
+    Column<T> width(int width);
 
-    public Column name(String name) {
-        this.name = name;
-        return this;
-    }
-
-    public Column width(int width) {
-        this.width = width;
-        return this;
-    }
-
-    public Column value(String value) {
-        this.value = value;
-        return this;
-    }
+    Column<T> value(Function<T, Object> fun);
 
 }

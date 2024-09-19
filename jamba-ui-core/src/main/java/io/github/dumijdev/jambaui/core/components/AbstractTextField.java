@@ -15,7 +15,7 @@ public abstract class AbstractTextField<I> implements Component<I> {
     private final Map<String, Object> properties = new HashMap<>();
 
     public AbstractTextField() {
-        this("TextField");
+        this("");
     }
 
     public AbstractTextField(String initialValue) {

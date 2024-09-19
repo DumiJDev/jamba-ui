@@ -1,14 +1,14 @@
 package io.github.dumijdev.jambaui.desktop;
 
 import com.sun.javafx.application.PlatformImpl;
-import io.github.dumijdev.jambaui.context.utils.BannerUtils;
-import io.github.dumijdev.jambaui.core.annotations.OnCreated;
-import io.github.dumijdev.jambaui.core.utils.Navigator;
-import io.github.dumijdev.jambaui.desktop.utils.UINavigator;
 import io.github.dumijdev.jambaui.context.container.ApplicationContainer;
 import io.github.dumijdev.jambaui.context.container.IoCContainer;
 import io.github.dumijdev.jambaui.context.container.ViewContainer;
+import io.github.dumijdev.jambaui.context.utils.BannerUtils;
 import io.github.dumijdev.jambaui.context.utils.ConfigurationManager;
+import io.github.dumijdev.jambaui.core.annotations.OnCreated;
+import io.github.dumijdev.jambaui.core.utils.Navigator;
+import io.github.dumijdev.jambaui.desktop.utils.UINavigator;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 
@@ -46,24 +46,7 @@ public class JambaUIApplication {
 
     public static void run(Class<?> initClass, String... args) {
 
-        PlatformImpl.startup(() -> {
-            BannerUtils.printBanner();
-            ApplicationContainer.getInstance().register(Navigator.class, navigator);
-            ApplicationContainer.getInstance().register(ConfigurationManager.class, ConfigurationManager.getInstance());
-
-            for (var container : containers) {
-                container.registerFromBase(initClass);
-            }
-
-            start();
-
-            for (var container : containers) {
-                for (var obj : container.resolveAll()) {
-                    invokeOnCreated(obj);
-                }
-            }
-
-        });
+        PlatformImpl.startup(new ApplicationRunner(initClass, args));
     }
 
     public static void registerContainer(IoCContainer<?, ?> container) {
@@ -84,5 +67,49 @@ public class JambaUIApplication {
         }
     }
 
+    private static void init(Class<?> initClass) {
+        ApplicationContainer.getInstance().register(Navigator.class, navigator);
+        ApplicationContainer.getInstance().register(ConfigurationManager.class, ConfigurationManager.getInstance());
+
+        for (var container : containers) {
+            container.registerFromBase(initClass);
+        }
+    }
+
+    private static void runOnCreated() {
+        for (var container : containers) {
+            for (var obj : container.resolveAll()) {
+                invokeOnCreated(obj);
+            }
+        }
+    }
+
+
+    private static class ApplicationRunner implements Runnable {
+        private final Class<?> initClass;
+        private final String[] args;
+
+        private ApplicationRunner(Class<?> initClass, String[] args) {
+            this.initClass = initClass;
+            this.args = args;
+        }
+
+
+        @Override
+        public void run() {
+            try {
+                BannerUtils.printBanner();
+
+                init(initClass);
+
+                start();
+
+                runOnCreated();
+
+            } catch (Exception e) {
+                PlatformImpl.exit();
+            }
+        }
+    }
 
 }

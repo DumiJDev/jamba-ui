@@ -4,8 +4,8 @@ import io.github.dumijdev.jambaui.core.components.AbstractTextField;
 import io.github.dumijdev.jambaui.desktop.style.ComponentStyle;
 import io.github.palexdev.materialfx.controls.MFXTextField;
 
-public class TextField extends AbstractTextField<javafx.scene.control.TextField> {
-    private final javafx.scene.control.TextField textField;
+public class TextField extends AbstractTextField<MFXTextField> {
+    private final MFXTextField textField;
 
     public TextField(String initialValue) {
         super(initialValue);
@@ -29,7 +29,7 @@ public class TextField extends AbstractTextField<javafx.scene.control.TextField>
     }
 
     @Override
-    public javafx.scene.control.TextField getInternal() {
+    public MFXTextField getInternal() {
         return textField;
     }
 }

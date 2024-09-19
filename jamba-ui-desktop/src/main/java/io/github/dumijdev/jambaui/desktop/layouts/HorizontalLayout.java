@@ -16,19 +16,24 @@ public class HorizontalLayout extends AbstractHorizontalLayout<HBox> {
     public HorizontalLayout() {
         this.hbox = new HBox();
         this.properties = new HashMap<>();
-        this.style = new ComponentStyle(hbox);
+        this.style = new ComponentStyle(hbox)
+                .set("-alignment", "center-left");
     }
 
     @Override
     public void add(Component<?>... component) {
         for (Component<?> c : component) {
-            hbox.getChildren().add(((Component<Node>) c).getInternal());
+            var child = ((Component<Node>) c).getInternal();
+
+            if (!hbox.getChildren().contains(child)) {
+                hbox.getChildren().add(child);
+            }
         }
     }
 
     @Override
     public void remove(Component<?> component) {
-
+        hbox.getChildren().remove((Node) component.getInternal());
     }
 
     @Override

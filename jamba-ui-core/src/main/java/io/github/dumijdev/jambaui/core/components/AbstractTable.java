@@ -8,30 +8,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public abstract class AbstractTable<T, K, I> implements Component<I> {
-    private final List<Column> columns;
-    private List<Row<T>> rows;
-    protected Style style;
+public abstract class AbstractTable<T, I> implements Component<I> {
     private final Map<String, Object> properties = new HashMap<>();
 
     public AbstractTable() {
-        columns = new LinkedList<>();
-        rows = new LinkedList<>();
     }
 
-    public Column addColumn() {
-        var column = new Column();
-        columns.add(column);
-        return column;
-    }
+    public abstract Column<T> addColumn();
 
-    public void setItems(T... items) {
-        var items1 = List.of(items);
-
-        rows = items1.stream().map(Row::new).toList();
-
-        update();
-    }
+    public abstract void setItems(T... items);
 
     @Override
     public void add(Component<?>... component) {
@@ -54,8 +39,4 @@ public abstract class AbstractTable<T, K, I> implements Component<I> {
         return properties.get(name);
     }
 
-    @Override
-    public Style getStyle() {
-        return style;
-    }
 }
