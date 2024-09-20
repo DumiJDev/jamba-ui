@@ -1,4 +1,4 @@
-package io.github.dumijdev.jambaui.desktop;
+package com.test;
 
 import io.github.dumijdev.jambaui.desktop.components.Button;
 import io.github.dumijdev.jambaui.desktop.components.Grid;
@@ -15,7 +15,6 @@ public class Main2Layout extends HorizontalLayout {
         add(new Button("Hello World 2", e -> navigator.navigateTo("main")));
 
         var grid = new Grid<String>(true);
-
 
         grid.setItems("Paulo");
 

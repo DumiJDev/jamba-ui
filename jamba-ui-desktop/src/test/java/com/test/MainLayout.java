@@ -1,11 +1,10 @@
-package io.github.dumijdev.jambaui.desktop;
+package com.test;
 
 import io.github.dumijdev.jambaui.core.annotations.Inject;
 import io.github.dumijdev.jambaui.core.annotations.Property;
 import io.github.dumijdev.jambaui.core.annotations.View;
 import io.github.dumijdev.jambaui.core.utils.Navigator;
 import io.github.dumijdev.jambaui.desktop.components.Button;
-import io.github.dumijdev.jambaui.desktop.components.Label;
 import io.github.dumijdev.jambaui.desktop.components.TextField;
 import io.github.dumijdev.jambaui.desktop.layouts.HorizontalLayout;
 

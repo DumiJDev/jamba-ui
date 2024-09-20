@@ -1,11 +1,16 @@
 package io.github.dumijdev.jambaui.desktop;
 
 import com.sun.javafx.application.PlatformImpl;
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ClassInfo;
+import io.github.classgraph.ScanResult;
 import io.github.dumijdev.jambaui.context.container.ApplicationContainer;
 import io.github.dumijdev.jambaui.context.container.IoCContainer;
 import io.github.dumijdev.jambaui.context.container.ViewContainer;
 import io.github.dumijdev.jambaui.context.utils.BannerUtils;
 import io.github.dumijdev.jambaui.context.utils.ConfigurationManager;
+import io.github.dumijdev.jambaui.core.Screen;
+import io.github.dumijdev.jambaui.core.annotations.Injectable;
 import io.github.dumijdev.jambaui.core.annotations.OnCreated;
 import io.github.dumijdev.jambaui.core.utils.Navigator;
 import io.github.dumijdev.jambaui.desktop.utils.UINavigator;
@@ -17,40 +22,63 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class JambaUIApplication {
-    private static final List<IoCContainer<?, ?>> containers;
-    private static UINavigator navigator = new UINavigator();
+
+    private static final List<IoCContainer<?, ?>> containers = new LinkedList<>();
+    private static final UINavigator navigator = new UINavigator();
 
     static {
-        containers = new LinkedList<>();
-
         containers.add(ApplicationContainer.getInstance());
         containers.add(ViewContainer.getInstance());
     }
 
-    private static void start() {
-        var main = navigator.getMain();
-
-        var root = navigator.getRoot();
-
-        var stage = navigator.getStage();
-
-        stage.setTitle(main.layout().getStyle().getTitle());
-
-        root.getChildren().add((Node) main.component().getInternal());
-
-        stage.setScene(new Scene(root, 700, 700));
-
-        stage.show();
-
-    }
-
     public static void run(Class<?> initClass, String... args) {
-
         PlatformImpl.startup(new ApplicationRunner(initClass, args));
     }
 
     public static void registerContainer(IoCContainer<?, ?> container) {
         containers.add(container);
+    }
+
+    private static void init(Class<?> initClass) {
+        scanAndRegisterComponents(initClass.getPackage().getName());
+    }
+
+    private static void scanAndRegisterComponents(String... packages) {
+        for (String pkg : packages) {
+            try (ScanResult scanResult = new ClassGraph().enableAllInfo().acceptPackages(pkg).scan()) {
+
+                for (ClassInfo classInfo : scanResult.getAllClasses()) {
+                    registerClass(classInfo.loadClass());
+                }
+            }
+        }
+    }
+
+    private static void registerClass(Class<?> clazz) {
+        for (IoCContainer<?, ?> container : containers) {
+            container.registerFromBase(clazz);
+        }
+    }
+
+    private static void start() {
+        Screen<?, ?> main = navigator.getMain();
+        var root = navigator.getRoot();
+        var stage = navigator.getStage();
+
+        stage.setTitle(main.layout().getStyle().getTitle());
+        root.getChildren().add((Node) main.component().getInternal());
+
+        stage.setScene(new Scene(root, 700, 700));
+        stage.show();
+    }
+
+    private static void runOnCreated() {
+        // Invocar todos os métodos anotados com @OnCreated
+        for (var container : containers) {
+            for (var obj : container.resolveAll()) {
+                invokeOnCreated(obj);
+            }
+        }
     }
 
     private static void invokeOnCreated(Object instance) {
@@ -63,27 +91,9 @@ public class JambaUIApplication {
                 }
             }
         } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException("Failed to invoke annotated method", e);
+            throw new RuntimeException("Failed to invoke @OnCreated method in " + instance.getClass().getName(), e);
         }
     }
-
-    private static void init(Class<?> initClass) {
-        ApplicationContainer.getInstance().register(Navigator.class, navigator);
-        ApplicationContainer.getInstance().register(ConfigurationManager.class, ConfigurationManager.getInstance());
-
-        for (var container : containers) {
-            container.registerFromBase(initClass);
-        }
-    }
-
-    private static void runOnCreated() {
-        for (var container : containers) {
-            for (var obj : container.resolveAll()) {
-                invokeOnCreated(obj);
-            }
-        }
-    }
-
 
     private static class ApplicationRunner implements Runnable {
         private final Class<?> initClass;
@@ -94,22 +104,21 @@ public class JambaUIApplication {
             this.args = args;
         }
 
-
         @Override
         public void run() {
             try {
                 BannerUtils.printBanner();
-
+                var start = System.currentTimeMillis();
                 init(initClass);
-
                 start();
-
                 runOnCreated();
+                var end = System.currentTimeMillis();
 
+                System.out.println(end - start + " ms");
             } catch (Exception e) {
+                e.printStackTrace();
                 PlatformImpl.exit();
             }
         }
     }
-
 }

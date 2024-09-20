@@ -1,7 +1,10 @@
 package io.github.dumijdev.jambaui.context.container;
 
 import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ClassInfo;
+import io.github.classgraph.ScanResult;
 import io.github.dumijdev.jambaui.context.factory.LayoutFactory;
+import io.github.dumijdev.jambaui.context.utils.PropertyResolver;
 import io.github.dumijdev.jambaui.core.Component;
 import io.github.dumijdev.jambaui.core.Screen;
 import io.github.dumijdev.jambaui.core.annotations.Inject;
@@ -9,12 +12,11 @@ import io.github.dumijdev.jambaui.core.annotations.Property;
 import io.github.dumijdev.jambaui.core.annotations.View;
 import io.github.dumijdev.jambaui.core.components.DefaultScreen;
 import io.github.dumijdev.jambaui.core.layouts.Layout;
-import io.github.dumijdev.jambaui.context.utils.PropertyResolver;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -23,154 +25,157 @@ public class ViewContainer implements IoCContainer<String, Screen<?, ?>> {
     private static final ViewContainer instance = new ViewContainer();
     private Screen<?, ?> main = null;
 
+    private ViewContainer() {
+    }
+
     public static ViewContainer getInstance() {
         return instance;
     }
 
-    private ViewContainer() {
-    }
-
     public void registerFromBase(Class<?> rootClass) {
         try (var result = new ClassGraph().enableAllInfo().acceptPackages(rootClass.getPackage().getName()).scan()) {
-
-            for (var candidate : result.getClassesWithAnnotation(View.class)) {
-                var clazz = candidate.loadClass();
-                if (!Modifier.isAbstract(clazz.getModifiers()) && !clazz.isInterface()) {
-                    createInjectable(clazz);
-                }
-            }
+            readDependencies(result);
+        } catch (Exception e) {
+            throw new RuntimeException("Error scanning package: " + rootClass.getPackage().getName(), e);
         }
+    }
+
+    private void readDependencies(ScanResult result) {
+
+        result.getClassesWithAnnotation(View.class).stream()
+                .map(ClassInfo::loadClass)
+                .filter(this::isInstantiable)
+                .forEach(this::createInjectable);
 
     }
 
+    private boolean isInstantiable(Class<?> clazz) {
+        return !Modifier.isAbstract(clazz.getModifiers()) && !clazz.isInterface();
+    }
+
+    @Override
     public Screen<?, ?> resolve(String s) {
         return views.get(s);
     }
 
+    @Override
     public void register(String s, Screen<?, ?> screen) {
         views.put(s, screen);
     }
 
     @Override
     public List<Screen<?, ?>> resolveAll() {
-        return views.values().stream().toList();
+        return new LinkedList<>(views.values());
     }
 
     private void createInjectable(Class<?> candidate) {
         try {
-            var view = candidate.getDeclaredAnnotation(View.class);
+            var viewAnnotation = candidate.getDeclaredAnnotation(View.class);
 
-            if (views.containsKey(view.value())) {
+            if (views.containsKey(viewAnnotation.value())) {
                 return;
             }
 
-            var contructors = candidate.getDeclaredConstructors();
-            Constructor<?> injectConstructor = null;
+            Object instance = createInstance(candidate);
 
-            for (var constructor : contructors) {
-                if (constructor.isAnnotationPresent(Inject.class)) {
-                    injectConstructor = constructor;
-                    break;
-                }
-            }
-
-            Object instance;
-            if (injectConstructor != null) {
-
-                var parameters = injectConstructor.getParameters();
-                var parameterTypes = injectConstructor.getParameterTypes();
-                Object[] parameterValues = new Object[parameterTypes.length];
-
-                for (int i = 0; i < parameterTypes.length; i++) {
-                    if (parameters[i].isAnnotationPresent(Property.class)) {
-                        var property = parameters[i].getDeclaredAnnotation(Property.class);
-                        parameterValues[i] = PropertyResolver.resolve(property.value(), parameterTypes[i]);
-                    } else {
-                        parameterValues[i] = getInjectable(parameterTypes[i]);
-                    }
-                }
-
-                instance = injectConstructor.newInstance(parameterValues);
-            } else {
-                instance = candidate.getDeclaredConstructor().newInstance();
-            }
-
-            var layout = LayoutFactory.getInstance().resolve(view.layout());
-            var isMain = view.main();
-            var title = view.title();
-            var value = view.value();
-
-            if (layout == null) {
-                throw new RuntimeException("Could not resolve layout for view " + candidate);
-            }
-
-            layout.getStyle().setTitle(PropertyResolver.resolve(title.isEmpty() ? value : title));
+            Layout<?> layout = resolveLayout(viewAnnotation.layout(), candidate);
+            layout.getStyle().setTitle(PropertyResolver.resolve(viewAnnotation.title().isEmpty() ? viewAnnotation.value() : viewAnnotation.title()));
             layout.add((Component<?>) instance);
 
-            var screen = new DefaultScreen<>((Layout<Object>) layout, (Component<Object>) instance);
+            Screen<?, ?> screen = new DefaultScreen<>((Layout<Object>) layout, (Component<Object>) instance);
+            register(viewAnnotation.value(), screen);
 
-            register(view.value(), screen);
-
-            if (isMain) {
-                if (main == null) {
-                    main = screen;
-                } else {
-                    throw new RuntimeException("Cannot register main view " + candidate);
-                }
+            if (viewAnnotation.main()) {
+                setMainView(candidate, screen);
             }
 
             injectFields(instance);
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
-                 NoSuchMethodException e) {
-            throw new RuntimeException(e);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create view for class: " + candidate.getName(), e);
         }
     }
 
-    private void injectFields(Object instance) {
-        Class<?> beanClass = instance.getClass();
-        var fields = beanClass.getDeclaredFields();
+    private Layout<?> resolveLayout(Class<?> layoutClass, Class<?> viewClass) {
+        Layout<?> layout = LayoutFactory.getInstance().resolve((Class<? extends Layout<?>>) layoutClass);
+        if (layout == null) {
+            throw new RuntimeException("Could not resolve layout for view: " + viewClass.getName());
+        }
+        return layout;
+    }
 
-        for (var field : fields) {
+    private Object createInstance(Class<?> clazz) throws Exception {
+        Constructor<?> injectConstructor = findInjectConstructor(clazz);
+
+        if (injectConstructor != null) {
+            Object[] parameterValues = resolveConstructorParameters(injectConstructor);
+            return injectConstructor.newInstance(parameterValues);
+        } else {
+            return clazz.getDeclaredConstructor().newInstance();
+        }
+    }
+
+    private Constructor<?> findInjectConstructor(Class<?> clazz) {
+        for (var constructor : clazz.getDeclaredConstructors()) {
+            if (constructor.isAnnotationPresent(Inject.class)) {
+                return constructor;
+            }
+        }
+        return null;
+    }
+
+    private Object[] resolveConstructorParameters(Constructor<?> constructor) throws Exception {
+        var parameters = constructor.getParameters();
+        Object[] parameterValues = new Object[parameters.length];
+
+        for (int i = 0; i < parameters.length; i++) {
+            var param = parameters[i];
+            parameterValues[i] = param.isAnnotationPresent(Property.class) ?
+                    PropertyResolver.resolve(param.getAnnotation(Property.class).value(), param.getType()) :
+                    getInjectable(param.getType());
+        }
+
+        return parameterValues;
+    }
+
+    private void injectFields(Object instance) {
+        Class<?> clazz = instance.getClass();
+
+        for (var field : clazz.getDeclaredFields()) {
             if (field.trySetAccessible()) {
-                if (field.isAnnotationPresent(Inject.class)) {
-                    try {
+                try {
+                    if (field.isAnnotationPresent(Inject.class)) {
                         Object dependency = getInjectable(field.getType());
                         field.set(instance, dependency);
-
-                    } catch (IllegalAccessException e) {
-                        throw new RuntimeException(e);
-                    }
-                } else if (field.isAnnotationPresent(Property.class)) {
-
-                    try {
+                    } else if (field.isAnnotationPresent(Property.class)) {
                         var property = field.getAnnotation(Property.class);
                         field.set(instance, PropertyResolver.resolve(property.value(), field.getType()));
-                    } catch (IllegalAccessException e) {
-                        throw new RuntimeException(e);
                     }
-
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException("Failed to inject field: " + field.getName(), e);
                 }
             }
         }
     }
 
-
     @SuppressWarnings("unchecked")
-    private <T> T getInjectable(Class<T> beanClass) {
-        T bean = (T) ApplicationContainer.getInstance().resolve(beanClass);
-        if (bean == null) {
-            ApplicationContainer.getInstance().registerFromBase(beanClass);
-            bean = (T) ApplicationContainer.getInstance().resolve(beanClass);
-        }
+    private <T> T getInjectable(Class<T> clazz) {
+        return (T) ApplicationContainer.getInstance().resolve(clazz);
+    }
 
-        return bean;
+    private void setMainView(Class<?> viewClass, Screen<?, ?> screen) {
+        if (main == null) {
+            main = screen;
+        } else {
+            throw new RuntimeException("Multiple main views found: " + viewClass.getName());
+        }
     }
 
     public Screen<?, ?> getMainView() {
         if (main == null) {
-            throw new RuntimeException("No main view found");
+            throw new RuntimeException("No main view registered");
         }
-
         return main;
     }
 }
+
