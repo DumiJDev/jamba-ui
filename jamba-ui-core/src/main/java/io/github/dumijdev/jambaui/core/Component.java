@@ -16,4 +16,6 @@ public interface Component<INTERNAL_COMPONENT> extends Serializable {
     Object getProperty(String name);
     void update();
     INTERNAL_COMPONENT getInternal();
+    void addClassName(String className);
+    void removeClassName(String className);
 }

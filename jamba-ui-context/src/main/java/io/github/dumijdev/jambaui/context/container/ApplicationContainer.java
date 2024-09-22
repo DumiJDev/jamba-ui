@@ -1,85 +1,99 @@
 package io.github.dumijdev.jambaui.context.container;
 
-import io.github.classgraph.ClassGraph;
-import io.github.classgraph.ClassInfo;
-import io.github.classgraph.ScanResult;
+import io.github.dumijdev.jambaui.context.scanner.ApplicationScanner;
 import io.github.dumijdev.jambaui.context.utils.PropertyResolver;
 import io.github.dumijdev.jambaui.core.annotations.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.*;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class ApplicationContainer implements IoCContainer<Class<?>, Object> {
     private final Map<Class<?>, Object> objects = new HashMap<>();
+    private static final List<Class<? extends Annotation>> annotations = new CopyOnWriteArrayList<>();
     private static final ApplicationContainer instance = new ApplicationContainer();
     private final Logger logger = LoggerFactory.getLogger(ApplicationContainer.class);
-    private final Set<Class<?>> inProgress = new HashSet<>();  // Para verificação de dependências circulares
+    private final Set<Class<?>> inProgress = new HashSet<>();
 
     private ApplicationContainer() {
+        registerAnnotation(Injectable.class);
+
         objects.put(ApplicationContainer.class, this);
+    }
+
+    public static void registerAnnotation(final Class<? extends Annotation> annotation) {
+        annotations.add(annotation);
     }
 
     public static ApplicationContainer getInstance() {
         return instance;
     }
 
-    private boolean isConcreteClasses(Class<?> clazz) {
-
-        var isConcrete = !(clazz.isAnnotation() || clazz.isInterface() || Modifier.isAbstract(clazz.getModifiers()));
-
-        return isConcrete && !objects.containsKey(clazz);
-    }
-
+    @SuppressWarnings("unchecked")
     @Override
     public void registerFromBase(Class<?> rootClass) {
-        try (var result = new ClassGraph().enableAllInfo().acceptPackages(rootClass.getPackage().getName()).scan()) {
-            readDependencies(result);
-        } catch (Exception e) {
-            logger.error("Failed to scan base package: {}", rootClass.getPackage().getName(), e);
-            throw new RuntimeException(e);
-        }
+        var basePackages = new String[]{"io.github.dumijdev.jambaui", rootClass.getPackage().getName()};
 
-        try (var result = new ClassGraph().enableAllInfo().acceptPackages("io.github.dumijdev.jambaui").scan()) {
-            readDependencies(result);
-        } catch (Exception e) {
-            logger.error("Failed to scan package: io.github.dumijdev.jambaui", e);
-            throw new RuntimeException(e);
-        }
+        var scanner = ApplicationScanner.getInstance();
+
+        logger.info("Starting scanning classes...");
+        scanner.scanPackages(basePackages);
+        logger.info("Finished scanning classes.");
+
+        scanner.getAnnotationsAnnotatedWith(Injectable.class)
+                .forEach(annotation -> annotations.add((Class<? extends Annotation>) annotation));
+
+        annotations.stream().map(scanner::getClassesAnnotatedBy)
+                .flatMap(Collection::stream)
+                .forEach(this::createInjectable);
+
+        scanner.getClassesAnnotatedBy(Configuration.class)
+                .forEach(this::processConfigClass);
+
+        annotations.stream().map(scanner::getInterfacesAnnotatedBy)
+                .flatMap(Collection::stream)
+                .forEach(this::createInterfaceInjectable);
+
+        scanner.getClassesAnnotatedBy(ExceptionController.class)
+                .forEach(this::registerHandlers);
     }
 
-    private void readDependencies(ScanResult result) {
-        result.getClassesWithAnnotation(Injectable.class).stream()
-                .map(ClassInfo::loadClass)
-                .filter(this::isConcreteClasses)
-                .forEach(this::createInjectable);
+    private void createInterfaceInjectable(Class<?> candidate) {
+        var scanner = ApplicationScanner.getInstance();
 
-        result.getClassesWithAnnotation(Logic.class).stream()
-                .map(ClassInfo::loadClass)
-                .filter(this::isConcreteClasses)
+        scanner.getClassesImplementingInterface(candidate)
                 .forEach(this::createInjectable);
+    }
 
-        result.getClassesWithAnnotation(Config.class).stream()
-                .map(ClassInfo::loadClass)
-                .filter(this::isConcreteClasses)
-                .forEach(this::processConfigClass);
+    private void registerHandlers(Class<?> candidate) {
+        ExceptionHandlerContainer
+                .getInstance()
+                .registerExceptionHandlers(resolve(candidate));
     }
 
     private void processConfigClass(Class<?> configClass) {
         for (var method : configClass.getDeclaredMethods()) {
             if (method.isAnnotationPresent(Injectable.class)) {
-                injectConfigMethod(method);
+                var instance = resolve(configClass);
+                injectConfigMethod(instance, method);
             }
         }
     }
 
-    private void injectConfigMethod(Method method) {
+    private void injectConfigMethod(Object o, Method method) {
         try {
             method.setAccessible(true);
-            Object[] paramValues = resolveParameters(method.getParameters());
+            var parameters = method.getParameters();
 
-            Object object = method.invoke(null, paramValues);
+            Object[] paramValues = resolveParameters(parameters);
+            var object = method.invoke(o, paramValues);
+
             if (object == null) {
                 throw new IllegalArgumentException("Method " + method.getName() + " returned null.");
             }
@@ -150,12 +164,24 @@ public class ApplicationContainer implements IoCContainer<Class<?>, Object> {
     }
 
     private Constructor<?> findInjectConstructor(Class<?> clazz) {
+        Constructor<?> injectConstructor = null;
         for (var constructor : clazz.getDeclaredConstructors()) {
             if (constructor.isAnnotationPresent(Inject.class)) {
-                return constructor;
+                injectConstructor = constructor;
             }
         }
-        return null;
+
+        if (injectConstructor == null) {
+            for (var constructor : clazz.getDeclaredConstructors()) {
+                injectConstructor = constructor;
+
+                if (injectConstructor != null) {
+                    break;
+                }
+            }
+        }
+
+        return injectConstructor;
     }
 
     private void injectFields(Object instance) {
@@ -206,8 +232,10 @@ public class ApplicationContainer implements IoCContainer<Class<?>, Object> {
     public Object resolve(Class<?> aClass) {
         var instance = objects.get(aClass);
 
-        if (instance == null && !inProgress.contains(aClass)) {  // Evitar ciclo ao tentar resolver durante a criação
+        if (instance == null && !inProgress.contains(aClass)) {
+            System.out.println(aClass.getName());
             registerFromBase(aClass);
+            instance = objects.get(aClass);
         }
 
         inProgress.remove(aClass);  // Remover da lista de dependências em progresso após a resolução

@@ -23,9 +23,11 @@ public class Button extends AbstractButton<MFXButton> {
 
         this.style = new ComponentStyle(button);
 
-        button.setOnAction(actionEvent -> {
-            listener.onEvent(new ClickEvent(this));
-        });
+        if (listener != null) {
+            button.setOnAction(actionEvent -> {
+                listener.onEvent(new ClickEvent(this));
+            });
+        }
     }
 
     @Override
@@ -37,4 +39,15 @@ public class Button extends AbstractButton<MFXButton> {
     public MFXButton getInternal() {
         return button;
     }
+
+    @Override
+    public void addClassName(String className) {
+        button.getStyleClass().add(className);
+    }
+
+    @Override
+    public void removeClassName(String className) {
+        button.getStyleClass().remove(className);
+    }
+
 }

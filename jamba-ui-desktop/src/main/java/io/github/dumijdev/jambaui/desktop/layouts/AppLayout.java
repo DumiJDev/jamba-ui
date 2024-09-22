@@ -73,4 +73,14 @@ public class AppLayout extends AbstractAppLayout<VBox> {
     public VBox getInternal() {
         return root;
     }
+
+    @Override
+    public void addClassName(String className) {
+        root.getStyleClass().add(className);
+    }
+
+    @Override
+    public void removeClassName(String className) {
+        root.getStyleClass().remove(className);
+    }
 }

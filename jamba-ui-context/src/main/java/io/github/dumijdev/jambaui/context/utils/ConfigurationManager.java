@@ -1,5 +1,6 @@
 package io.github.dumijdev.jambaui.context.utils;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,19 +23,27 @@ public class ConfigurationManager {
     }
 
     public void loadProperties(String fileName) {
-        if (props.isEmpty()) {
-            if (fileName.endsWith(".properties")) {
-                var properties = new PropertyLoader(fileName);
+        try (var input = getClass().getClassLoader().getResourceAsStream(fileName)) {
+            if (input == null) {
+                return;
+            }
 
-                for (var prop : properties.getProperties()) {
-                    props.put(prop.getKey(), prop.getValue().toString());
-                }
-            } else if (fileName.endsWith(".yml") || fileName.endsWith(".yaml")) {
-                var yamlLoader = new YamlLoader(fileName);
-                for (var prop : yamlLoader.getProperties()) {
-                    props.put(prop.getKey(), prop.getValue().toString());
+            if (props.isEmpty()) {
+                if (fileName.endsWith(".properties")) {
+                    var properties = new PropertyLoader(input);
+
+                    for (var prop : properties.getProperties()) {
+                        props.put(prop.getKey(), prop.getValue().toString());
+                    }
+                } else if (fileName.endsWith(".yml") || fileName.endsWith(".yaml")) {
+                    var yamlLoader = new YamlLoader(input);
+                    for (var prop : yamlLoader.getProperties()) {
+                        props.put(prop.getKey(), prop.getValue().toString());
+                    }
                 }
             }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 

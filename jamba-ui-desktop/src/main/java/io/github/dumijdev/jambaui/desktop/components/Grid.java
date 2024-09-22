@@ -43,6 +43,16 @@ public class Grid<T> extends AbstractTable<T, MFXTableView<T>> {
         return tableView;
     }
 
+    @Override
+    public void addClassName(String className) {
+        tableView.getStyleClass().add(className);
+    }
+
+    @Override
+    public void removeClassName(String className) {
+        tableView.getStyleClass().remove(className);
+    }
+
     @SafeVarargs
     @Override
     public final void setItems(T... items) {

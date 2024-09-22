@@ -1,5 +1,6 @@
 package com.test;
 
+import com.test.config.TestInjectable;
 import io.github.dumijdev.jambaui.core.annotations.Inject;
 import io.github.dumijdev.jambaui.core.annotations.Property;
 import io.github.dumijdev.jambaui.core.annotations.View;
@@ -14,10 +15,12 @@ public class MainLayout extends HorizontalLayout {
     private int current = 0;
 
     @Inject
-    public MainLayout(Navigator navigator, @Property("${app.name}") String appName) {
+    public MainLayout(Navigator navigator, @Property("${app.name}") String appName, TestInjectable testInjectable) {
         var bt = new Button("Click " + appName, e -> {
             navigator.navigateTo("main 2");
         });
+
+        System.out.println(testInjectable);
 
         bt.getStyle().setBackgroundColor("red").setFontColor("blue");
 

@@ -32,4 +32,14 @@ public class TextField extends AbstractTextField<MFXTextField> {
     public MFXTextField getInternal() {
         return textField;
     }
+
+    @Override
+    public void addClassName(String className) {
+        textField.getStyleClass().add(className);
+    }
+
+    @Override
+    public void removeClassName(String className) {
+        textField.getStyleClass().remove(className);
+    }
 }

@@ -41,4 +41,14 @@ public class VerticalLayout extends AbstractVerticalLayout<VBox> {
     public VBox getInternal() {
         return vbox;
     }
+
+    @Override
+    public void addClassName(String className) {
+        vbox.getStyleClass().add(className);
+    }
+
+    @Override
+    public void removeClassName(String className) {
+        vbox.getStyleClass().remove(className);
+    }
 }

@@ -38,4 +38,20 @@ public class Label extends AbstractLabel<javafx.scene.control.Label> {
     public javafx.scene.control.Label getInternal() {
         return this.label;
     }
+
+    @Override
+    public void addClassName(String className) {
+        label.getStyleClass().add(className);
+    }
+
+    @Override
+    public void removeClassName(String className) {
+        label.getStyleClass().remove(className);
+    }
+
+    @Override
+    public void setText(String text) {
+        super.setText(text);
+        this.label.setText(text);
+    }
 }

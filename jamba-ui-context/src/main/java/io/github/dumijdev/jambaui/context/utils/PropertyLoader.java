@@ -10,15 +10,13 @@ import java.util.stream.Collectors;
 public class PropertyLoader {
     private final Properties properties = new Properties();
 
-    public PropertyLoader(String fileName) {
-        try (InputStream input = getClass().getClassLoader().getResourceAsStream(fileName)) {
+    public PropertyLoader(InputStream input) {
+        try {
             if (input == null) {
                 return;
             }
             properties.load(input);
-        } catch (IOException ignored) {
-
-        }
+        } catch (IOException e) {}
     }
 
     public String getProperty(String key) {

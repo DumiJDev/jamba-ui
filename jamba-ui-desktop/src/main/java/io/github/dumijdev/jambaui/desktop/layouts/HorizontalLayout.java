@@ -72,4 +72,14 @@ public class HorizontalLayout extends AbstractHorizontalLayout<HBox> {
         result = 31 * result + properties.hashCode();
         return result;
     }
+
+    @Override
+    public void addClassName(String className) {
+        hbox.getStyleClass().add(className);
+    }
+
+    @Override
+    public void removeClassName(String className) {
+        hbox.getStyleClass().remove(className);
+    }
 }

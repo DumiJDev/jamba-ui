@@ -5,10 +5,7 @@ public class PropertyResolver {
         if (propertyName == null || propertyName.isEmpty()) {
             return null;
         } else if (propertyName.matches("[$][{][A-Za-z0-9.-_]+[}]")) {
-            var key = propertyName
-                    .replaceAll("\\$", "")
-                    .replaceAll("\\{", "")
-                    .replaceAll("}", "");
+            var key = extractKey(propertyName);
 
             return (T) Types.convert(ConfigurationManager.getInstance().getProperty(key), clazz);
         } else {
@@ -22,5 +19,9 @@ public class PropertyResolver {
 
     public static String resolve(String propertyName) {
         return resolve(propertyName, String.class);
+    }
+
+    private static String extractKey(String propertyName) {
+        return propertyName.replaceAll("\\$", "").replaceAll("\\{", "").replaceAll("}", "");
     }
 }
