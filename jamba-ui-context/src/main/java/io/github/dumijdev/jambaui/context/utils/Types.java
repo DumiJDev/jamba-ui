@@ -3,6 +3,9 @@ package io.github.dumijdev.jambaui.context.utils;
 public class Types {
     @SuppressWarnings("unchecked")
     public static  <T> T convert(Object value, Class<T> type) {
+        if (value == null)
+            return null;
+
         if (int.class.equals(type) || Integer.class.equals(type)) {
             return (T) Integer.valueOf(value.toString());
         } else if (long.class.equals(type) || Long.class.equals(type)) {

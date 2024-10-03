@@ -21,7 +21,9 @@ public class JambaUiDataConfigModel {
     @Property("${jambaui.data.jpa.show_sql}")
     private String showSql;
     @Property("${jambaui.data.jpa.pool_size}")
-    private int poolSize;
+    private int poolSize = 1;
+    @Property("${jambaui.data.jpa.platform}")
+    private String platform;
 
     public JambaUiDataConfigModel() {
 
@@ -55,6 +57,14 @@ public class JambaUiDataConfigModel {
         return showSql;
     }
 
+    public String getPlatform() {
+        return platform;
+    }
+
+    public int getPoolSize() {
+        return poolSize;
+    }
+
     @Override
     public String toString() {
         return "JambaUiDataConfigModel{" +
@@ -66,10 +76,7 @@ public class JambaUiDataConfigModel {
                 ", ddlAuto='" + ddlAuto + '\'' +
                 ", showSql='" + showSql + '\'' +
                 ", poolSize=" + poolSize +
+                ", platform='" + platform + '\'' +
                 '}';
-    }
-
-    public int getPoolSize() {
-        return poolSize;
     }
 }

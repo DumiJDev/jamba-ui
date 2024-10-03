@@ -11,4 +11,4 @@ jambaui:
       password: password
       ddl_auto: update
       show_sql: true
-      pool_size: 10
+      platform: h2

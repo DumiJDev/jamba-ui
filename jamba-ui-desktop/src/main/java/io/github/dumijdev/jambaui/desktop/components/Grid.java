@@ -4,13 +4,12 @@ import io.github.dumijdev.jambaui.core.components.AbstractTable;
 import io.github.dumijdev.jambaui.core.style.Style;
 import io.github.dumijdev.jambaui.desktop.components.grid.GridColumn;
 import io.github.dumijdev.jambaui.desktop.style.ComponentStyle;
-import io.github.palexdev.materialfx.controls.MFXPaginatedTableView;
-import io.github.palexdev.materialfx.controls.MFXTableView;
+import javafx.scene.control.TableView;
 
 import static javafx.collections.FXCollections.observableArrayList;
 
-public class Grid<T> extends AbstractTable<T, MFXTableView<T>> {
-    private final MFXTableView<T> tableView;
+public class Grid<T> extends AbstractTable<T, TableView<T>> {
+    private final TableView<T> tableView;
     private final Style style;
 
     public Grid() {
@@ -18,7 +17,7 @@ public class Grid<T> extends AbstractTable<T, MFXTableView<T>> {
     }
 
     public Grid(boolean pageable) {
-        tableView = pageable ? new MFXPaginatedTableView<>() : new MFXTableView<>();
+        tableView = new TableView<>();
 
         style = new ComponentStyle(tableView);
     }
@@ -35,11 +34,11 @@ public class Grid<T> extends AbstractTable<T, MFXTableView<T>> {
 
     @Override
     public void update() {
-        tableView.update();
+        tableView.layout();
     }
 
     @Override
-    public MFXTableView<T> getInternal() {
+    public TableView<T> getInternal() {
         return tableView;
     }
 

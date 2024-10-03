@@ -12,10 +12,11 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class ApplicationContainer implements IoCContainer<Class<?>, Object> {
-    private final Map<Class<?>, Object> objects = new HashMap<>();
+    private final Map<Class<?>, Object> objects = new ConcurrentHashMap<>();
     private static final List<Class<? extends Annotation>> annotations = new CopyOnWriteArrayList<>();
     private static final ApplicationContainer instance = new ApplicationContainer();
     private final Logger logger = LoggerFactory.getLogger(ApplicationContainer.class);
@@ -213,7 +214,9 @@ public class ApplicationContainer implements IoCContainer<Class<?>, Object> {
         try {
             Property property = field.getAnnotation(Property.class);
             Object value = PropertyResolver.resolve(property.value(), field.getType());
-            field.set(instance, value);
+            if (value != null) {
+                field.set(instance, value);
+            }
         } catch (IllegalAccessException e) {
             logger.error("Failed to inject property: {}", field.getName(), e);
             throw new RuntimeException(e);

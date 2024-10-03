@@ -1,18 +1,21 @@
 package io.github.dumijdev.jambaui.desktop.components.grid;
 
+import io.github.dumijdev.jambaui.core.Component;
 import io.github.dumijdev.jambaui.core.components.Column;
-import io.github.palexdev.materialfx.controls.MFXTableColumn;
-import io.github.palexdev.materialfx.controls.MFXTableView;
-import io.github.palexdev.materialfx.controls.cell.MFXTableRowCell;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.scene.Node;
+import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 
 import java.util.function.Function;
 
 public class GridColumn<T> implements Column<T> {
-    private final MFXTableColumn<T> column;
+    private final TableColumn<T, Object> column;
 
-    public GridColumn(MFXTableView<T> tableView) {
-        column = new MFXTableColumn<>();
-        tableView.getTableColumns().add(column);
+    public GridColumn(TableView<T> tableView) {
+        column = new TableColumn<>();
+        tableView.getColumns().add(column);
     }
 
     @Override
@@ -48,7 +51,32 @@ public class GridColumn<T> implements Column<T> {
     @Override
     public Column<T> value(Function<T, Object> fun) {
 
-        column.setRowCellFactory(t -> new MFXTableRowCell<>(fun));
+        column.setCellValueFactory(t -> new SimpleObjectProperty<>(fun.apply(t.getValue())));
+
+        return this;
+    }
+
+    @Override
+    public Column<T> action(Function<T, ? extends Component<?>> fun) {
+
+        column.setCellFactory(t ->  new TableCell<T, Object>(){
+
+            @Override
+            protected void updateItem(Object o, boolean b) {
+                super.updateItem(o, b);
+
+                if (b) {
+                    setGraphic(null);
+                    setText(null);
+                } else {
+                    setText(null);
+
+                    T t1 = getTableView().getItems().get(getIndex());
+
+                    t.setGraphic((Node) fun.apply(t1).getInternal());
+                }
+            }
+        });
 
         return this;
     }

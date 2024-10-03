@@ -14,6 +14,7 @@
         <module>jamba-ui-desktop</module>
         <module>jamba-ui-data</module>
         <module>sample</module>
+        <module>jamba-ui-security</module>
     </modules>
 
     <properties>

@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
+import java.util.List;
 import java.util.Properties;
 
 @Configuration
@@ -36,7 +37,11 @@ public class JambaDataConfig {
 
         // Configurar Hibernate
         Properties hibernateProperties = new Properties();
-        hibernateProperties.put(Environment.DIALECT, model.getDialect());
+
+        if (!"h2".equalsIgnoreCase(model.getPlatform())) {
+            hibernateProperties.put(Environment.DIALECT, model.getDialect());
+        }
+
         hibernateProperties.put(Environment.SHOW_SQL, model.getShowSql());
         hibernateProperties.put(Environment.HBM2DDL_AUTO, model.getDdlAuto());
 
@@ -60,12 +65,21 @@ public class JambaDataConfig {
 
     private static DataSource getDataSource(JambaUiDataConfigModel model) {
         HikariConfig hikariConfig = new HikariConfig();
-        hikariConfig.setJdbcUrl(model.getJdbcUrl()); // URL do banco de dados
-        hikariConfig.setUsername(model.getUsername()); // Usuário do banco de dados
-        hikariConfig.setPassword(model.getPassword());   // Senha do banco de dados
-        hikariConfig.setDriverClassName(model.getJdbcDriver()); // Driver JDBC
-        hikariConfig.setMaximumPoolSize(model.getPoolSize()); // Tamanho do pool
 
+        hikariConfig.setJdbcUrl(model.getJdbcUrl());
+        hikariConfig.setUsername(model.getUsername());
+        hikariConfig.setPassword(model.getPassword());
+        hikariConfig.setDriverClassName(model.getJdbcDriver());
+        hikariConfig.setAutoCommit(true);
+        hikariConfig.setMaximumPoolSize(5);
+
+        int poolSize = model.getPoolSize();
+
+        if (!List.of("h2", "sqlite").contains(model.getPlatform())) {
+            poolSize = 1;
+        }
+
+        hikariConfig.setMaximumPoolSize(poolSize);
         return new HikariDataSource(hikariConfig);
     }
 
