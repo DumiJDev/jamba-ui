@@ -1,0 +1,14 @@
+app:
+  name: Sample
+
+jambaui:
+  data:
+    jpa:
+      dialect: org.hibernate.dialect.H2Dialect
+      driver_class: org.h2.Driver
+      url: jdbc:h2:mem:testdb
+      username: sa
+      password: password
+      ddl_auto: update
+      show_sql: true
+      platform: h2
